@@ -1,6 +1,6 @@
 # Repository specification: aether-ai-auth
 
-**Status:** Documentation baseline copied from the Aether AI master specification. Implementation status must be verified separately.
+**Status:** Repository exists; documentation-only on the inspected `main` branch. No application implementation is present in the audited tree.
 
 ## Mission
 
@@ -8,7 +8,7 @@ Identity provider integration, session/token validation, user identity mapping, 
 
 ## Dependencies and connections
 
-Selected identity provider adapter (TBD) and a narrow shared principal/policy contract where needed. API and domain services consume the public authentication/session contract. Auth does not import API or domain consumers.
+aether-ai-security for shared principal/policy primitives; authentication/session lifecycle remains owned here.
 
 ## Owned capabilities
 
