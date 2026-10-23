@@ -14,11 +14,12 @@ const TOKEN_MAX_LENGTH = 16_384;
 function isRecord(value) { return value !== null && typeof value === "object" && !Array.isArray(value); }
 function validString(value) { return typeof value === "string" && value.length > 0 && value.trim() === value; }
 
-export function createAuthenticator({ verifyAccessToken, resolvePrincipal, issuer, audience, clock = () => Math.floor(Date.now() / 1000) }) {
+export function createAuthenticator({ verifyAccessToken, resolvePrincipal, issuer, audience, clock = () => Math.floor(Date.now() / 1000), timeoutMs = 5_000 }) {
   if (typeof verifyAccessToken !== "function") throw new TypeError("verifyAccessToken adapter is required");
   if (typeof resolvePrincipal !== "function") throw new TypeError("resolvePrincipal adapter is required");
   if (!validString(issuer) || !validString(audience)) throw new TypeError("Explicit issuer and audience are required");
   if (typeof clock !== "function") throw new TypeError("clock must be a function");
+  if (!Number.isSafeInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 30_000) throw new TypeError("timeoutMs must be between 1 and 30000");
 
   return Object.freeze({
     async authenticate({ headers } = {}) {
@@ -30,8 +31,8 @@ export function createAuthenticator({ verifyAccessToken, resolvePrincipal, issue
       if (!match || match[1].length > TOKEN_MAX_LENGTH) throw new AuthenticationError("invalid_credentials");
 
       let claims;
-      try { claims = await verifyAccessToken(match[1], { issuer, audience }); }
-      catch { throw new AuthenticationError("invalid_credentials"); }
+      try { claims = await boundedCall(verifyAccessToken, [match[1], { issuer, audience }], timeoutMs, "verification_timeout"); }
+      catch (error) { if (error instanceof AuthenticationError && error.code === "verification_timeout") throw error; throw new AuthenticationError("invalid_credentials"); }
       if (!isRecord(claims) || !validString(claims.sub) || claims.iss !== issuer) {
         throw new AuthenticationError("invalid_claims");
       }
@@ -51,8 +52,9 @@ export function createAuthenticator({ verifyAccessToken, resolvePrincipal, issue
       }
       let principal;
       try {
-        principal = await resolvePrincipal({ subject: claims.sub, tenantSelector, claims });
-      } catch {
+        principal = await boundedCall(resolvePrincipal, [{ subject: claims.sub, tenantSelector, claims }], timeoutMs, "principal_resolution_timeout");
+      } catch (error) {
+        if (error instanceof AuthenticationError && error.code === "principal_resolution_timeout") throw error;
         throw new AuthenticationError("principal_resolution_failed");
       }
       if (!isRecord(principal) || !validString(principal.id) || !validString(principal.tenantId)) {
@@ -61,4 +63,14 @@ export function createAuthenticator({ verifyAccessToken, resolvePrincipal, issue
       return Object.freeze({ id: principal.id, tenantId: principal.tenantId });
     },
   });
+}
+
+
+async function boundedCall(fn, args, timeoutMs, timeoutCode) {
+  let timer;
+  const timeout = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new AuthenticationError(timeoutCode)), timeoutMs);
+  });
+  try { return await Promise.race([Promise.resolve().then(() => fn(...args)), timeout]); }
+  finally { clearTimeout(timer); }
 }
