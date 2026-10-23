@@ -16,7 +16,7 @@ test("validates session time bounds and required issuer/audience", () => {
   assert.equal(validateSessionEnvelope(session, { now }).sessionId, "session-1");
   assert.throws(() => validateSessionEnvelope({ ...session, expiresAt: session.issuedAt }, { now }), /after issuedAt/);
   assert.throws(() => validateSessionEnvelope({ ...session, expiresAt: "2026-10-23T08:30:00Z" }, { now }), /expired/);
-  assert.throws(() => validateSessionEnvelope({ ...session, issuedAt: "2026-10-24T00:00:00Z" }, { now }), /future/);
+  assert.throws(() => validateSessionEnvelope({ ...session, issuedAt: "2026-10-24T00:00:00Z", expiresAt: "2026-10-24T01:00:00Z" }, { now }), /future/);
   assert.throws(() => validateSessionEnvelope({ ...session, expiresAt: "2026-11-01T08:00:00Z" }, { now }), /maximum/);
 });
 
