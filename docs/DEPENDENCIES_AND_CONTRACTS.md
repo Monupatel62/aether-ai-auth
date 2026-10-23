@@ -3,12 +3,15 @@
 **Status:** Proposed; identity provider and token profile are not selected.
 
 ## Dependencies
-Selected identity provider adapter (TBD), narrow principal contract, API and domain consumers.
+
+Selected identity provider adapter (TBD) and the narrow aether-ai-security principal/policy contract as needed. API and domain services consume Auth's public principal/session contracts; Auth must not depend on or import those consumers.
 
 ## Owned contracts
+
 Authenticated principal identity, session lifecycle, authentication errors and provider identity mapping.
 
 ## Required rules
+
 - Define issuer, audience, accepted algorithms, key rotation, expiry and required claims through an approved profile.
 - Authentication alone never grants access to a resource.
 - Caller-supplied tenant membership or role claims are not authoritative.
