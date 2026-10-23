@@ -67,10 +67,19 @@ export function createAuthenticator({ verifyAccessToken, resolvePrincipal, issue
 
 
 async function boundedCall(fn, args, timeoutMs, timeoutCode) {
+  const controller = new AbortController();
+  const callArgs = [...args];
+  const lastIndex = callArgs.length - 1;
+  if (callArgs[lastIndex] && typeof callArgs[lastIndex] === "object" && !Array.isArray(callArgs[lastIndex])) {
+    callArgs[lastIndex] = { ...callArgs[lastIndex], signal: controller.signal };
+  }
   let timer;
   const timeout = new Promise((_, reject) => {
-    timer = setTimeout(() => reject(new AuthenticationError(timeoutCode)), timeoutMs);
+    timer = setTimeout(() => {
+      controller.abort();
+      reject(new AuthenticationError(timeoutCode));
+    }, timeoutMs);
   });
-  try { return await Promise.race([Promise.resolve().then(() => fn(...args)), timeout]); }
+  try { return await Promise.race([Promise.resolve().then(() => fn(...callArgs)), timeout]); }
   finally { clearTimeout(timer); }
 }
