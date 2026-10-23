@@ -72,3 +72,10 @@ test("passes abort signals to auth adapters", async () => {
   assert.ok(verifySignal instanceof AbortSignal);
   assert.equal(verifySignal.aborted, false);
 });
+
+
+test("rejects blank or whitespace-padded tenant selectors", async () => {
+  const { auth } = setup();
+  await assert.rejects(auth.authenticate({ headers: { authorization: "Bearer abc.def.ghi", "x-tenant-id": " " } }), (e) => e.code === "invalid_tenant_selector");
+  await assert.rejects(auth.authenticate({ headers: { authorization: "Bearer abc.def.ghi", "x-tenant-id": " tenant-a " } }), (e) => e.code === "invalid_tenant_selector");
+});
