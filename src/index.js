@@ -47,7 +47,7 @@ export function createAuthenticator({ verifyAccessToken, resolvePrincipal, issue
       // This header is only an untrusted selector. The resolver must verify that
       // the subject is a member of the selected tenant before returning a principal.
       const tenantSelector = headers["x-tenant-id"];
-      if (tenantSelector !== undefined && (typeof tenantSelector !== "string" || tenantSelector.length > 256)) {
+      if (tenantSelector !== undefined && (!validString(tenantSelector) || tenantSelector.length > 256)) {
         throw new AuthenticationError("invalid_tenant_selector");
       }
       let principal;
