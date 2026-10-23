@@ -56,3 +56,19 @@ test("does not trust token claims as the canonical tenant", async () => {
   assert.equal(selected, "untrusted-selector");
   assert.equal(principal.tenantId, "verified-tenant");
 });
+
+
+test("bounds token verification and tenant principal resolution", async () => {
+  const verifier = setup({ timeoutMs: 5, verifyAccessToken: () => new Promise(() => {}) }).auth;
+  await assert.rejects(verifier.authenticate({ headers: { authorization: "Bearer abc.def.ghi" } }), (e) => e.code === "verification_timeout");
+  const resolver = setup({ timeoutMs: 5, resolvePrincipal: () => new Promise(() => {}) }).auth;
+  await assert.rejects(resolver.authenticate({ headers: { authorization: "Bearer abc.def.ghi" } }), (e) => e.code === "principal_resolution_timeout");
+});
+
+test("passes abort signals to auth adapters", async () => {
+  let verifySignal;
+  const { auth } = setup({ verifyAccessToken: async (_token, options) => { verifySignal = options.signal; return claims; } });
+  await auth.authenticate({ headers: { authorization: "Bearer abc.def.ghi" } });
+  assert.ok(verifySignal instanceof AbortSignal);
+  assert.equal(verifySignal.aborted, false);
+});
