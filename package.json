@@ -1,0 +1,10 @@
+{
+  "name": "@aether-ai/auth",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Trusted token verification and principal resolution boundary for Aether AI.",
+  "type": "module",
+  "engines": { "node": ">=20" },
+  "exports": { ".": "./src/index.js" },
+  "scripts": { "test": "node --test", "check": "node --check src/index.js && node --check test/auth.test.js" }
+}
